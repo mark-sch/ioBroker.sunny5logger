@@ -145,7 +145,7 @@ class Sunny5Logger extends utils.Adapter {
 			if (err) throw err;
  
 			let buf = Buffer.concat(res.response.data)
-			let registers = Solis4GParser.Register().parse(buf);
+			let registers = Solis4GParser.InputRegister().parse(buf);
  
 			Object.keys(registers).forEach(async key => {
 				me.setState(key, registers[key], true);
