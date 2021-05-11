@@ -10,6 +10,7 @@ const utils = require('@iobroker/adapter-core');
 const mqtt = require('mqtt');
 const modbus = require("modbus-stream");
 const Parser = require("binary-parser-encoder").Parser;
+const schedule = require('node-schedule');
 var me;
 
 var  div10 = function(i) {
@@ -131,7 +132,10 @@ class Sunny5Logger extends utils.Adapter {
 				me.modbusConnected = true;
 				me.log.info('Connected to serial modbus device: ' + modbusDevice);
 				me.setState('modbus_connected', true, true);
-				me.readSolis4GInverter(me.modbusClient, modbusAddress, me.modbusConnected);
+
+				me.schedule1S = schedule.scheduleJob('*/1 * * * * *', function(){
+					me.readSolis4GInverter(me.modbusClient, modbusAddress, me.modbusConnected);
+				});
 			}
 			else {
 				me.modbusConnected = false;
@@ -145,7 +149,7 @@ class Sunny5Logger extends utils.Adapter {
 		if (!connected) return;
 
 		connection.readInputRegisters({ address: 3005, quantity: 50, extra: { unitId: address } }, (err, res) => {
-			if (err) throw err;
+			if (err) return;
  
 			let buf = Buffer.concat(res.response.data)
 			let registers = Solis4GParser.InputRegister().parse(buf);
