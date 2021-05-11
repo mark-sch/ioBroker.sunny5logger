@@ -1,102 +1,103 @@
 {
-	"common": {
-		"name": "sunny5-logger",
-		"version": "0.0.1",
-		"news": {
-			"0.0.1": {
-				"en": "initial release",
-				"de": "Erstveröffentlichung",
-				"ru": "Начальная версия",
-				"pt": "lançamento inicial",
-				"nl": "Eerste uitgave",
-				"fr": "Première version",
-				"it": "Versione iniziale",
-				"es": "Versión inicial",
-				"pl": "Pierwsze wydanie",
-				"zh-cn": "首次出版"
-			}
-		},
-		"titleLang": {
-			"en": "Sunny5-Logger Settings",
-			"de": "Sunny5-Logger-Einstellungen",
-			"ru": "Настройки Sunny5-Logger",
-			"pt": "Configurações do Sunny5-Logger",
-			"nl": "Sunny5-Logger-instellingen",
-			"fr": "Paramètres du Sunny5-Logger",
-			"it": "Impostazioni Sunny5-Logger",
-			"es": "Ajustes del Sunny5-Logger",
-			"pl": "Ustawienia Sunny5-Logger",
-			"zh-cn": "Sunny5-Logger设置"
-		},
-		"desc": {
-			"en": "Connect to photovotaic inverters, read data, publish to mqtt and store solar data to json file.",
-			"de": "Stellen Sie eine Verbindung zu photovotaischen Wechselrichtern her, lesen Sie Daten, veröffentlichen Sie sie in mqtt und speichern Sie Solardaten in einer JSON-Datei.",
-			"ru": "Подключайтесь к фотоэлектрическим инверторам, считывайте данные, публикуйте их в mqtt и сохраняйте солнечные данные в файл json.",
-			"pt": "Conecte a inversores fotovóticos, leia dados, publique em mqtt e armazene dados solares em arquivo json.",
-			"nl": "Maak verbinding met fotovotaïsche omvormers, lees gegevens, publiceer naar mqtt en sla zonnegegevens op in json-bestand.",
-			"fr": "Connectez-vous à des onduleurs photovoltaïques, lisez des données, publiez sur mqtt et stockez les données solaires dans un fichier json.",
-			"it": "Collegarsi a inverter fotovotaici, leggere i dati, pubblicare su mqtt e memorizzare i dati solari su file json.",
-			"es": "Conéctese a inversores fotovotaicos, lea datos, publíquelos en mqtt y almacene datos solares en un archivo json.",
-			"pl": "Połącz się z falownikami fotowoltaicznymi, czytaj dane, publikuj w mqtt i przechowuj dane słoneczne w pliku json.",
-			"zh-cn": "连接到光伏逆变器，读取数据，发布到m​​qtt并将太阳能数据存储到json文件。"
-		},
-		"authors": [
-			"mark-sch <support@think5.de>"
-		],
-		"keywords": [
-			"solar",
-			"inverter",
-			"data",
-			"logger",
-			"rs485",
-			"modbus",
-			"mqtt"
-		],
-		"license": "MIT",
-		"platform": "Javascript/Node.js",
-		"icon": "sunny5-logger.png",
-		"enabled": true,
-		"extIcon": "https://raw.githubusercontent.com/mark-sch/ioBroker.sunny5-logger/master/admin/sunny5-logger.png",
-		"readme": "https://github.com/mark-sch/ioBroker.sunny5-logger/blob/master/README.md",
-		"loglevel": "info",
-		"mode": "daemon",
-		"type": "protocols",
-		"compact": true,
-		"connectionType": "local",
-		"dataSource": "poll",
-		"materialize": true,
-		"dependencies": [
-			{
-				"js-controller": ">=2.0.0"
-			}
-		]
-	},
-	"native": {
-		"option1": true,
-		"option2": "42"
-	},
-	"objects": [],
-	"instanceObjects": [
-		{
-			"_id": "info",
-			"type": "channel",
-			"common": {
-				"name": "Information"
-			},
-			"native": {}
-		},
-		{
-			"_id": "info.connection",
-			"type": "state",
-			"common": {
-				"role": "indicator.connected",
-				"name": "Device or service connected",
-				"type": "boolean",
-				"read": true,
-				"write": false,
-				"def": false
-			},
-			"native": {}
-		}
-	]
+  "common": {
+    "name": "sunny5-logger",
+    "version": "0.0.1",
+    "news": {
+      "0.0.1": {
+        "en": "initial release",
+        "de": "Erstveröffentlichung",
+        "ru": "Начальная версия",
+        "pt": "lançamento inicial",
+        "nl": "Eerste uitgave",
+        "fr": "Première version",
+        "it": "Versione iniziale",
+        "es": "Versión inicial",
+        "pl": "Pierwsze wydanie",
+        "zh-cn": "首次出版"
+      }
+    },
+    "titleLang": {
+      "en": "Sunny5-Logger Settings",
+      "de": "Sunny5-Logger-Einstellungen",
+      "ru": "Настройки Sunny5-Logger",
+      "pt": "Configurações do Sunny5-Logger",
+      "nl": "Sunny5-Logger-instellingen",
+      "fr": "Paramètres du Sunny5-Logger",
+      "it": "Impostazioni Sunny5-Logger",
+      "es": "Ajustes del Sunny5-Logger",
+      "pl": "Ustawienia Sunny5-Logger",
+      "zh-cn": "Sunny5-Logger设置"
+    },
+    "desc": {
+      "en": "Connect to photovotaic inverters, read data, publish to mqtt and store solar data to json file.",
+      "de": "Stellen Sie eine Verbindung zu photovotaischen Wechselrichtern her, lesen Sie Daten, veröffentlichen Sie sie in mqtt und speichern Sie Solardaten in einer JSON-Datei.",
+      "ru": "Подключайтесь к фотоэлектрическим инверторам, считывайте данные, публикуйте их в mqtt и сохраняйте солнечные данные в файл json.",
+      "pt": "Conecte a inversores fotovóticos, leia dados, publique em mqtt e armazene dados solares em arquivo json.",
+      "nl": "Maak verbinding met fotovotaïsche omvormers, lees gegevens, publiceer naar mqtt en sla zonnegegevens op in json-bestand.",
+      "fr": "Connectez-vous à des onduleurs photovoltaïques, lisez des données, publiez sur mqtt et stockez les données solaires dans un fichier json.",
+      "it": "Collegarsi a inverter fotovotaici, leggere i dati, pubblicare su mqtt e memorizzare i dati solari su file json.",
+      "es": "Conéctese a inversores fotovotaicos, lea datos, publíquelos en mqtt y almacene datos solares en un archivo json.",
+      "pl": "Połącz się z falownikami fotowoltaicznymi, czytaj dane, publikuj w mqtt i przechowuj dane słoneczne w pliku json.",
+      "zh-cn": "连接到光伏逆变器，读取数据，发布到m​​qtt并将太阳能数据存储到json文件。"
+    },
+    "authors": [
+      "mark-sch <support@think5.de>"
+    ],
+    "keywords": [
+      "solar",
+      "inverter",
+      "data",
+      "logger",
+      "rs485",
+      "modbus",
+      "mqtt"
+    ],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "icon": "sunny5-logger.png",
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/mark-sch/ioBroker.sunny5-logger/master/admin/sunny5-logger.png",
+    "readme": "https://github.com/mark-sch/ioBroker.sunny5-logger/blob/master/README.md",
+    "loglevel": "info",
+    "mode": "daemon",
+    "type": "protocols",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "poll",
+    "materialize": true,
+    "dependencies": [
+      {
+        "js-controller": ">=2.0.0"
+      }
+    ],
+    "installedFrom": "mark-sch/ioBroker.sunny5-logger#e5a328ba05c11595c147fd15d422b26996936037"
+  },
+  "native": {
+    "option1": true,
+    "option2": "42"
+  },
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": "Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "role": "indicator.connected",
+        "name": "Device or service connected",
+        "type": "boolean",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ]
 }

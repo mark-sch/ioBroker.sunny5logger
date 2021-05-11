@@ -31,7 +31,18 @@
 						.on('change', () => onChange())
 						;
 				} else {
-					// do not call onChange direct, because onChange could expect some arguments
+					$key.val(settings[id]).on('change', function () {
+                        var key = $(this).attr('id');
+                        if (key === 'inverter' && $('#inverter').val() === 'sunny5')  {
+							$('.modbus-device').hide();
+							$('.modbus-address').hide();
+						}
+						else {
+							$('.modbus-device').show();
+							$('.modbus-address').show();
+						}
+                    })
+
 					$key.val(settings[id])
 						.on('change', () => onChange())
 						.on('keyup', () => onChange())
@@ -39,8 +50,18 @@
 				}
 			});
 			onChange(false);
+
 			// reinitialize all the Materialize labels on the page if you are dynamically adding inputs:
 			if (M) M.updateTextFields();
+
+			if ($('#inverter').val() === 'sunny5')  {
+				$('.modbus-device').hide();
+				$('.modbus-address').hide();
+			}
+			else {
+				$('.modbus-device').show();
+				$('.modbus-address').show();
+			}
 		}
 
 		// This will be called by the admin adapter when the user presses the save button
@@ -64,7 +85,6 @@
 </head>
 
 <body>
-
 	<div class="m adapter-container">
 
 		<div class="row">
@@ -73,21 +93,44 @@
 			</div>
 		</div>
 
-		<!-- Put your content here -->
-
-		<!-- For example columns with settings: -->
 		<div class="row">
-			<div class="col s6 input-field">
-				<input type="checkbox" class="value" id="option1" />
-				<label for="option1" class="translate">option1</label>
-			</div>
-
-			<div class="col s6 input-field">
-				<input type="text" class="value" id="option2" />
-				<label for="option2" class="translate">option2</label>
+			<div class="col s12">
+				<p>Select your inverter model and mqtt server. Inverter data will be published to mqtt and snapshot data stored to a json file every five minutes.</p>
 			</div>
 		</div>
 
+		<div class="row">
+			<div class="col s12 input-field">
+				<select class="value" id="inverter">
+					<option value="sunny5">Sunny5/Luxpower Hybrid-Wechselrichter</option>
+					<option value="solis4g">Solis 4G</option>
+					<option value="smatri">SMA Tripower</option>
+					<option value="outd">PowerOne Aurora/ABB Outd</option>
+				</select>
+				<label for="inverter" class="translate">Wechselrichter</label>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col s12 input-field">
+				<input type="text" class="value" id="MqttServer" placeholder="localhost:1883" />
+				<label for="MqttServer" class="translate">MQTT Server</label>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col s12 input-field modbus-device">
+				<input type="text" class="value" id="ModbusDevice" placeholder="/dev/ttyUSB0" />
+				<label for="ModbusDevice" class="translate">Modbus device</label>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col s12 input-field modbus-address">
+				<input type="text" class="value" id="ModbusAddress" placeholder="0" />
+				<label for="ModbusAddress" class="translate">Modbus address</label>
+			</div>
+		</div>
 	</div>
 
 </body>

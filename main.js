@@ -7,9 +7,47 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require('@iobroker/adapter-core');
+const mqtt = require('mqtt');
+const modbus = require("modbus-stream");
+const Parser = require("binary-parser-encoder").Parser;
+var me;
 
-// Load your modules here, e.g.:
-// const fs = require("fs");
+var  div10 = function(i) {
+        return i / 10
+}
+
+var div100 = function(i) {
+        return i / 100
+}
+
+const Solis4GParser = {
+    InputRegister() {  return new Parser()
+        .uint16be("ac_power")
+        .seek(2)
+        .uint16be("dc_power")
+        .uint32be("total_energy")
+        .seek(2)
+        .uint16be("month_energy")
+        .uint16be("lastmonth_energy")
+        .seek(2)
+        .uint16be("today_energy", { formatter: div10 })
+        .uint16be("yesterday_energy", { formatter: div10 })
+        .uint32be("year_energy")
+        .uint32be("lastyear_energy")
+        .seek(2)
+        .uint16be("dc_voltage_1", { formatter: div10 })
+        .uint16be("dc_current_1", { formatter: div10 })
+        .uint16be("dc_voltage_2", { formatter: div10 })
+        .uint16be("dc_current_2", { formatter: div10 })
+        .seek(20)
+        .uint16be("ac_voltage", { formatter: div10 })
+        .uint16be("ac_current", { formatter: div10 })
+        .seek(8)
+        .uint16be("inverter_temperature", { formatter: div10 })
+        .uint16be("ac_frequency", { formatter: div100 })
+   }
+}
+
 
 class Sunny5Logger extends utils.Adapter {
 
@@ -26,66 +64,153 @@ class Sunny5Logger extends utils.Adapter {
 		// this.on('objectChange', this.onObjectChange.bind(this));
 		// this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
+		me = this;
+	}
+
+	initMqtt(mqttServer) {
+		this.mqttClient  = mqtt.connect('mqtt://' + mqttServer, { connectTimeout: 5*1000 })
+
+		this.mqttClient.on('error', function (err) {
+			me.log.error('Error connecting to MQTT broker');
+			me.mqttConnected = false;
+			me.setState('info.connection', false, true);
+			me.setState('mqtt_connected', false, true);
+		})
+
+		this.mqttClient.on('connect', function () {
+			me.log.info('Connected to MQTT broker');
+			me.mqttConnected = true;
+			me.setState('info.connection', true, true);
+			me.setState('mqtt_connected', true, true);
+			//set default values
+			me.mqttClient.publish(me.name + '.' + me.instance + '/inverter', me.config.inverter);
+		
+			//client.subscribe('sunny5miner/'+rigname+'/#',{qos:1});
+		})
+		
+		//handle incoming mqtt messages (set)
+		this.mqttClient.on('message', async function (topic, message) {
+			// message is Buffer
+			let msg = message.toString();
+			if (!topic.includes('/enabled/set')) return;
+			if (message == 'ok' || message == 'error' ||  message == 'error - invalid value set') return;
+			console.log('MQTT message', topic, msg);
+			
+			if (msg != 'true' && msg != 'false') { client.publish(topic, 'error - invalid value set'); return; }
+			let gpunr = topic.match(/.*gpu(\d*)\/.*/)[1];
+			let result = await jsonrpc.controlGPU(host, port, pass, Number(gpunr), msg == 'true' ? 1 : 0);
+			console.log('Set gpu'+gpunr+' to enabled:'+msg);
+			if (result == true) {
+				client.publish(topic, 'ok');
+			}
+			else {
+				client.publish(topic, 'error');
+			}
+		})
+	}
+
+
+	initSunny5Inverter() {
+		// The adapters config (in the instance object everything under the attribute "native") is accessible via
+		// this.config:
+		//this.log.info('config option1: ' + this.config.option1);
+		//this.log.info('config option2: ' + this.config.option2);
+	}
+
+	initSolis4GInverter(modbusDevice, modbusAddress) {
+		modbus.serial.connect(modbusDevice, {
+			baudRate : 9600,
+			dataBits : 8,
+			stopBits : 1,
+			parity   : "even",
+			debug    : "sunny5logger"
+		}, (err, connection) => {
+			me.modbusClient = connection;
+			me.modbusConnected = true;
+			if (!err) {
+				me.setState('modbus_connected', true, true);
+				me.readSolis4GInverter(me.modbusClient, me.modbusConnected);
+			}
+			else {
+				me.log.error('Error opening a serial modbus connection: ' + modbusDevice);
+				return;
+			}
+		});
+	}
+
+	readSolis4GInverter(connection, connected) {
+		if (!connected) return;
+
+		connection.readInputRegisters({ address: 3005, quantity: 50, extra: { unitId: 0 } }, (err, res) => {
+			if (err) throw err;
+ 
+			let buf = Buffer.concat(res.response.data)
+			let registers = Solis4GParser.Register().parse(buf);
+ 
+			Object.keys(registers).forEach(async key => {
+				me.setState(key, registers[key], true);
+			});
+		 })
+ 
 	}
 
 	/**
 	 * Is called when databases are connected and adapter received configuration.
 	 */
 	async onReady() {
-		// Initialize your adapter here
-
-		// Reset the connection indicator during startup
-		this.setState('info.connection', false, true);
-
-		// The adapters config (in the instance object everything under the attribute "native") is accessible via
-		// this.config:
-		this.log.info('config option1: ' + this.config.option1);
-		this.log.info('config option2: ' + this.config.option2);
-
 		/*
 		For every state in the system there has to be also an object of type state
 		Here a simple template for a boolean variable named "testVariable"
 		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
 		*/
-		await this.setObjectNotExistsAsync('testVariable', {
-			type: 'state',
-			common: {
-				name: 'testVariable',
-				type: 'boolean',
-				role: 'indicator',
-				read: true,
-				write: true,
-			},
-			native: {},
+
+		let states = {
+			mqtt_server: this.config.MqttServer,
+			mqtt_connected: false,
+			modbus_connected: false,
+			ac_power: 0,
+			dc_power: 0,
+			total_energy: 0,
+			month_energy: 0,
+			lastmonth_energy: 0,
+			today_energy: 0,
+			yesterday_energy: 0,
+			year_energy: 0,
+			lastyear_energy: 0,
+			dc_voltage_1: 0,
+			dc_current_1: 0,
+			dc_voltage_2: 0,
+			dc_current_2: 0,
+			ac_voltage: 0,
+			ac_current: 0,
+			inverter_temperature: 0,
+			ac_frequency: 0
+		}
+		  
+		Object.keys(states).forEach(async key => {
+			await this.setObjectNotExistsAsync(key, {
+				type: 'state',
+				common: {
+					type: 'mixed',
+					read: true,
+					write: false,
+				},
+				native: {},
+			});
+			this.setState(key, states[key], true);
 		});
 
+		this.mqttConnected = false;
+		this.modbusConnected = false;
+		this.setState('info.connection', false, true);
+
+		this.initMqtt(this.config.MqttServer);
+
+		if (this.config.inverter === 'sunny5') this.initSunny5Inverter();
+		if (this.config.inverter === 'solis4g') this.initSolis4GInverter(this.config.ModbusDevice, this.config.ModbusAddress);
+
 		// In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
-		this.subscribeStates('testVariable');
-		// You can also add a subscription for multiple states. The following line watches all states starting with "lights."
 		// this.subscribeStates('lights.*');
-		// Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
-		// this.subscribeStates('*');
-
-		/*
-			setState examples
-			you will notice that each setState will cause the stateChange event to fire (because of above subscribeStates cmd)
-		*/
-		// the variable testVariable is set to true as command (ack=false)
-		await this.setStateAsync('testVariable', true);
-
-		// same thing, but the value is flagged "ack"
-		// ack should be always set to true if the value is received from or acknowledged from the target system
-		await this.setStateAsync('testVariable', { val: true, ack: true });
-
-		// same thing, but the state is deleted after 30s (getState will return null afterwards)
-		await this.setStateAsync('testVariable', { val: true, ack: true, expire: 30 });
-
-		// examples for the checkPassword/checkGroup functions
-		let result = await this.checkPasswordAsync('admin', 'iobroker');
-		this.log.info('check user admin pw iobroker: ' + result);
-
-		result = await this.checkGroupAsync('admin', 'admin');
-		this.log.info('check group user admin group admin: ' + result);
 	}
 
 	/**
