@@ -126,22 +126,25 @@ class Sunny5Logger extends utils.Adapter {
 			debug    : "sunny5logger"
 		}, (err, connection) => {
 			me.modbusClient = connection;
-			me.modbusConnected = true;
+
 			if (!err) {
+				me.modbusConnected = true;
+				me.log.info('Connected to serial modbus device: ' + modbusDevice);
 				me.setState('modbus_connected', true, true);
-				me.readSolis4GInverter(me.modbusClient, me.modbusConnected);
+				me.readSolis4GInverter(me.modbusClient, modbusAddress, me.modbusConnected);
 			}
 			else {
+				me.modbusConnected = false;
 				me.log.error('Error opening a serial modbus connection: ' + modbusDevice);
 				return;
 			}
 		});
 	}
 
-	readSolis4GInverter(connection, connected) {
+	readSolis4GInverter(connection, address,  connected) {
 		if (!connected) return;
 
-		connection.readInputRegisters({ address: 3005, quantity: 50, extra: { unitId: 0 } }, (err, res) => {
+		connection.readInputRegisters({ address: 3005, quantity: 50, extra: { unitId: address } }, (err, res) => {
 			if (err) throw err;
  
 			let buf = Buffer.concat(res.response.data)
@@ -149,6 +152,7 @@ class Sunny5Logger extends utils.Adapter {
  
 			Object.keys(registers).forEach(async key => {
 				me.setState(key, registers[key], true);
+				if (me.mqttConnected) me.mqttClient.publish(me.name + '.' + me.instance + '/' + key, registers[key]);
 			});
 		 })
  
