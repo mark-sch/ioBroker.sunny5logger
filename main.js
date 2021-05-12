@@ -11,6 +11,7 @@ const mqtt = require('mqtt');
 const modbus = require("modbus-stream");
 const Parser = require("binary-parser-encoder").Parser;
 const schedule = require('node-schedule');
+var mqttClient;
 var me;
 
 var  div10 = function(i) {
@@ -69,35 +70,36 @@ class Sunny5Logger extends utils.Adapter {
 	}
 
 	initMqtt(mqttServer) {
-		me.mqttClient  = mqtt.connect('mqtt://' + mqttServer, { connectTimeout: 5*1000 })
+		mqttClient  = mqtt.connect('mqtt://' + mqttServer, { connectTimeout: 5*1000 })
 
-		me.mqttClient.on('error', function (err) {
+		mqttClient.on('error', function (err) {
 			me.log.error('Error connecting to MQTT broker');
 			me.mqttConnected = false;
 			me.setState('info.connection', false, true);
 			me.setState('mqtt_connected', false, true);
 		})
 
-		me.mqttClient.on('connect', function () {
+		mqttClient.on('connect', function () {
 			me.log.info('Connected to MQTT broker: ' + mqttServer);
 			me.mqttConnected = true;
 			me.setState('info.connection', true, true);
 			me.setState('mqtt_connected', true, true);
 			//set default values
-			me.mqttClient.publish(me.name + '.' + me.instance + '/inverter', me.config.inverter);
+			mqttClient.publish(me.name + '/' + me.instance + '/inverter', me.config.inverter);
 		})
 	}
 
 
 	initSunny5Inverter() {
-		me.mqttClient.subscribe('sunny5/#',{qos:1});
+		mqttClient.subscribe('sunny5/#', {qos:1});
 
 		//handle incoming mqtt messages (set)
-		me.mqttClient.on('message', async function (topic, message) {
+		mqttClient.on('message', async function (topic, message) {
 			// message is Buffer
 			let msg = message.toString();
-			console.log('MQTT message', topic, msg);
-			me.mqttConnected.publish(me.name + '.' + me.instance + '/' + topic, msg);
+			let newtopic = topic.replace('sunny5/','');
+			console.log('MQTT message', newtopic, msg);
+			mqttClient.publish(me.name + '/' + me.instance + '/' + newtopic, msg);
 			
 		})
 	}
@@ -140,7 +142,7 @@ class Sunny5Logger extends utils.Adapter {
 			let registers = Solis4GParser.InputRegister().parse(buf);
  
 			Object.keys(registers).forEach(async key => {
-				if (mqttConnected) me.mqttClient.publish(me.name + '.' + me.instance + '/' + key, registers[key] + '');
+				if (mqttConnected) me.mqttClient.publish(me.name + '/' + me.instance + '/' + key, registers[key] + '');
 				me.setState(key, registers[key], true);
 			});
 		 })
