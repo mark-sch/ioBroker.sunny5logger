@@ -8,13 +8,12 @@
 [![NPM](https://nodei.co/npm/iobroker.sunny5-logger.png?downloads=true)](https://nodei.co/npm/iobroker.sunny5-logger/)
 
 ## sunny5-logger adapter for ioBroker
-
 Connect to photovotaic inverters, read data, publish to mqtt and store solar data to json file.
 
-Sunny5/Luxpower is connected by mqtt
-Solis 4G is connected by modbus rs485
-SMA Tripower is connected by modbus tcp
-PowerOne/ABB is connected by modbus rs485
+- Sunny5/Luxpower is connected by mqtt
+- Solis 4G is connected by modbus rs485
+- SMA Tripower is connected by modbus tcp
+- PowerOne/ABB is connected by modbus rs485
 
 ### Test the adapter manually on a local ioBroker installation
 In order to install the adapter locally without publishing, the following steps are recommended:
