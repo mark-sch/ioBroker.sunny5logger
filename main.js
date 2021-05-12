@@ -74,15 +74,15 @@ class Sunny5Logger extends utils.Adapter {
 		me.mqttClient.on('error', function (err) {
 			me.log.error('Error connecting to MQTT broker');
 			me.mqttConnected = false;
-			me.setState('info.connection', 'false', true);
-			me.setState('mqtt_connected', 'false', true);
+			me.setState('info.connection', false, true);
+			me.setState('mqtt_connected', false, true);
 		})
 
 		me.mqttClient.on('connect', function () {
-			me.log.info('Connected to MQTT broker');
+			me.log.info('Connected to MQTT broker: ' + mqttServer);
 			me.mqttConnected = true;
-			me.setState('info.connection', 'true', true);
-			me.setState('mqtt_connected', 'true', true);
+			me.setState('info.connection', true, true);
+			me.setState('mqtt_connected', true, true);
 			//set default values
 			me.mqttClient.publish(me.name + '.' + me.instance + '/inverter', me.config.inverter);
 		})
@@ -114,7 +114,7 @@ class Sunny5Logger extends utils.Adapter {
 
 			if (!err) {
 				me.modbusConnected = true;
-				me.setState('modbus_connected', 'true', true);
+				me.setState('modbus_connected', true, true);
 				me.log.info('Connected to serial modbus device: ' + modbusDevice);
 
 				me.schedule1S = schedule.scheduleJob('*/1 * * * * *', function(){
@@ -123,7 +123,7 @@ class Sunny5Logger extends utils.Adapter {
 			}
 			else {
 				me.modbusConnected = false;
-				me.setState('modbus_connected', 'false', true);
+				me.setState('modbus_connected', false, true);
 				me.log.error('Error opening a serial modbus connection: ' + modbusDevice);
 				return;
 			}
@@ -140,8 +140,8 @@ class Sunny5Logger extends utils.Adapter {
 			let registers = Solis4GParser.InputRegister().parse(buf);
  
 			Object.keys(registers).forEach(async key => {
-				me.setState(key, registers[key], true);
 				if (mqttConnected) me.mqttClient.publish(me.name + '.' + me.instance + '/' + key, registers[key] + '');
+				me.setState(key, registers[key], true);
 			});
 		 })
  
