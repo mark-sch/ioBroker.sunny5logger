@@ -99,12 +99,25 @@ class Sunny5Logger extends utils.Adapter {
 			let msg = message.toString();
 			let newtopic = topic.replace('sunny5/','');
 			console.log('MQTT message', newtopic, msg);
-			mqttClient.publish(me.name + '/' + me.instance + '/' + newtopic, msg);
-			
+
+			switch (newtopic) {
+				case 'pv_energy':
+					mqttClient.publish(me.name + '/' + me.instance + '/ac_power', msg);
+					mqttClient.publish(me.name + '/' + me.instance + '/dc_power', msg);
+					break;
+				case 'consumption':
+						mqttClient.publish(me.name + '/' + me.instance + '/ac_consumption' + newtopic, msg);
+						break;
+				case 'grid':
+					mqttClient.publish(me.name + '/' + me.instance + '/grid_meter' + newtopic, msg);
+					break;
+			}
 		})
 	}
 
 	initSolis4GInverter(modbusDevice, modbusAddress) {
+		mqttClient.subscribe('sunny5-logger/#', {qos:1});
+
 		modbus.serial.connect(modbusDevice, {
 			baudRate : 9600,
 			dataBits : 8,
