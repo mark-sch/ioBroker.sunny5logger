@@ -69,20 +69,20 @@ class Sunny5Logger extends utils.Adapter {
 	}
 
 	initMqtt(mqttServer) {
-		this.mqttClient  = mqtt.connect('mqtt://' + mqttServer, { connectTimeout: 5*1000 })
+		me.mqttClient  = mqtt.connect('mqtt://' + mqttServer, { connectTimeout: 5*1000 })
 
-		this.mqttClient.on('error', function (err) {
+		me.mqttClient.on('error', function (err) {
 			me.log.error('Error connecting to MQTT broker');
 			me.mqttConnected = false;
-			me.setState('info.connection', false, true);
-			me.setState('mqtt_connected', false, true);
+			me.setState('info.connection', 'false', true);
+			me.setState('mqtt_connected', 'false', true);
 		})
 
-		this.mqttClient.on('connect', function () {
+		me.mqttClient.on('connect', function () {
 			me.log.info('Connected to MQTT broker');
 			me.mqttConnected = true;
-			me.setState('info.connection', true, true);
-			me.setState('mqtt_connected', true, true);
+			me.setState('info.connection', 'true', true);
+			me.setState('mqtt_connected', 'true', true);
 			//set default values
 			me.mqttClient.publish(me.name + '.' + me.instance + '/inverter', me.config.inverter);
 		})
@@ -114,23 +114,24 @@ class Sunny5Logger extends utils.Adapter {
 
 			if (!err) {
 				me.modbusConnected = true;
+				me.setState('modbus_connected', 'true', true);
 				me.log.info('Connected to serial modbus device: ' + modbusDevice);
-				me.setState('modbus_connected', true, true);
 
 				me.schedule1S = schedule.scheduleJob('*/1 * * * * *', function(){
-					me.readSolis4GInverter(me.modbusClient, modbusAddress, me.modbusConnected);
+					me.readSolis4GInverter(me.modbusClient, modbusAddress, me.modbusConnected, me.mqttConnected);
 				});
 			}
 			else {
 				me.modbusConnected = false;
+				me.setState('modbus_connected', 'false', true);
 				me.log.error('Error opening a serial modbus connection: ' + modbusDevice);
 				return;
 			}
 		});
 	}
 
-	readSolis4GInverter(connection, address,  connected) {
-		if (!connected) return;
+	readSolis4GInverter(connection, address,  modbusConnected, mqttConnected) {
+		if (!modbusConnected) return;
 
 		connection.readInputRegisters({ address: 3005, quantity: 50, extra: { unitId: address } }, (err, res) => {
 			if (err) return;
@@ -140,7 +141,7 @@ class Sunny5Logger extends utils.Adapter {
  
 			Object.keys(registers).forEach(async key => {
 				me.setState(key, registers[key], true);
-				if (me.mqttConnected) me.mqttClient.publish(me.name + '.' + me.instance + '/' + key, registers[key] + '');
+				if (mqttConnected) me.mqttClient.publish(me.name + '.' + me.instance + '/' + key, registers[key] + '');
 			});
 		 })
  
@@ -158,8 +159,8 @@ class Sunny5Logger extends utils.Adapter {
 
 		let states = {
 			mqtt_server: this.config.MqttServer,
-			mqtt_connected: false,
-			modbus_connected: false,
+			mqtt_connected: 'false',
+			modbus_connected: 'false',
 			ac_power: 0,
 			dc_power: 0,
 			total_energy: 0,
