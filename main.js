@@ -85,37 +85,21 @@ class Sunny5Logger extends utils.Adapter {
 			me.setState('mqtt_connected', true, true);
 			//set default values
 			me.mqttClient.publish(me.name + '.' + me.instance + '/inverter', me.config.inverter);
-		
-			//client.subscribe('sunny5miner/'+rigname+'/#',{qos:1});
-		})
-		
-		//handle incoming mqtt messages (set)
-		this.mqttClient.on('message', async function (topic, message) {
-			// message is Buffer
-			let msg = message.toString();
-			if (!topic.includes('/enabled/set')) return;
-			if (message == 'ok' || message == 'error' ||  message == 'error - invalid value set') return;
-			console.log('MQTT message', topic, msg);
-			
-			if (msg != 'true' && msg != 'false') { client.publish(topic, 'error - invalid value set'); return; }
-			let gpunr = topic.match(/.*gpu(\d*)\/.*/)[1];
-			let result = await jsonrpc.controlGPU(host, port, pass, Number(gpunr), msg == 'true' ? 1 : 0);
-			console.log('Set gpu'+gpunr+' to enabled:'+msg);
-			if (result == true) {
-				client.publish(topic, 'ok');
-			}
-			else {
-				client.publish(topic, 'error');
-			}
 		})
 	}
 
 
 	initSunny5Inverter() {
-		// The adapters config (in the instance object everything under the attribute "native") is accessible via
-		// this.config:
-		//this.log.info('config option1: ' + this.config.option1);
-		//this.log.info('config option2: ' + this.config.option2);
+		me.mqttClient.subscribe('sunny5/#',{qos:1});
+
+		//handle incoming mqtt messages (set)
+		me.mqttClient.on('message', async function (topic, message) {
+			// message is Buffer
+			let msg = message.toString();
+			console.log('MQTT message', topic, msg);
+			me.mqttConnected.publish(me.name + '.' + me.instance + '/' + topic, msg);
+			
+		})
 	}
 
 	initSolis4GInverter(modbusDevice, modbusAddress) {
@@ -156,7 +140,7 @@ class Sunny5Logger extends utils.Adapter {
  
 			Object.keys(registers).forEach(async key => {
 				me.setState(key, registers[key], true);
-				if (me.mqttConnected) me.mqttClient.publish(me.name + '.' + me.instance + '/' + key, registers[key]);
+				if (me.mqttConnected) me.mqttClient.publish(me.name + '.' + me.instance + '/' + key, registers[key] + '');
 			});
 		 })
  
