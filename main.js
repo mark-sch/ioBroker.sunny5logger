@@ -155,7 +155,7 @@ class Sunny5Logger extends utils.Adapter {
 			let registers = Solis4GParser.InputRegister().parse(buf);
  
 			Object.keys(registers).forEach(async key => {
-				if (mqttConnected) mqttClient.publish(me.name + '/' + me.instance + '/' + key, registers[key] + '');
+				mqttClient.publish(me.name + '/' + me.instance + '/' + key, registers[key] + '');
 				me.setState(key, registers[key], true);
 			});
 		 })
