@@ -1,7 +1,15 @@
 {
   "common": {
     "name": "sunny5-logger",
-    "version": "0.0.1",
+    "version": "2021.5.11",
+    "title": "Sunny5-Logger",
+    "titleLang": {
+            "en": "Sunny5-Logger",
+            "de": "Sunny5-Logger"
+    },
+    "authors": [
+            "Think5 GmbH <support@think5.de>"
+    ],
     "news": {
       "0.0.1": {
         "en": "initial release",
