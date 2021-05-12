@@ -3,12 +3,9 @@
 [![NPM version](https://img.shields.io/npm/v/iobroker.sunny5-logger.svg)](https://www.npmjs.com/package/iobroker.sunny5-logger)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.sunny5-logger.svg)](https://www.npmjs.com/package/iobroker.sunny5-logger)
 ![Number of Installations (latest)](https://iobroker.live/badges/sunny5-logger-installed.svg)
-![Number of Installations (stable)](https://iobroker.live/badges/sunny5-logger-stable.svg)
 [![Dependency Status](https://img.shields.io/david/mark-sch/iobroker.sunny5-logger.svg)](https://david-dm.org/mark-sch/iobroker.sunny5-logger)
 
 [![NPM](https://nodei.co/npm/iobroker.sunny5-logger.png?downloads=true)](https://nodei.co/npm/iobroker.sunny5-logger/)
-
-**Tests:** ![Test and Release](https://github.com/mark-sch/ioBroker.sunny5-logger/workflows/Test%20and%20Release/badge.svg)
 
 ## sunny5-logger adapter for ioBroker
 
