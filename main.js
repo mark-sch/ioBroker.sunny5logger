@@ -11,8 +11,8 @@ const mqtt = require('mqtt');
 const modbus = require("modbus-stream");
 const Parser = require("binary-parser-encoder").Parser;
 const schedule = require('node-schedule');
-var me;
 var mqttClient;
+var me;
 
 var  div10 = function(i) {
         return i / 10
@@ -70,16 +70,14 @@ class Sunny5Logger extends utils.Adapter {
 	}
 
 	initMqtt(mqttServer) {
-		me.mqttConnected = false;
-		me.modbusConnected = false;
-
-		mqttClient  = mqtt.connect('mqtt://' + mqttServer, { })
+		mqttClient  = mqtt.connect('mqtt://' + mqttServer, { connectTimeout: 5*1000 })
 
 		mqttClient.on('error', function (err) {
 			me.log.error('Error connecting to MQTT broker');
 			me.mqttConnected = false;
 			me.setState('info.connection', false, true);
 			me.setState('mqtt_connected', false, true);
+			mqttClient.publish(me.name + '/' + me.instance + '/mqttConnected', 'false');
 		})
 
 		mqttClient.on('connect', function () {
@@ -87,50 +85,10 @@ class Sunny5Logger extends utils.Adapter {
 			me.mqttConnected = true;
 			me.setState('info.connection', true, true);
 			me.setState('mqtt_connected', true, true);
+			mqttClient.publish(me.name + '/' + me.instance + '/mqttConnected', 'true');
 			//set default values
 			mqttClient.publish(me.name + '/' + me.instance + '/inverter', me.config.inverter);
-
-			let states = {
-				mqtt_server: me.config.MqttServer,
-				mqtt_connected: false,
-				modbus_connected: false,
-				ac_power: 0,
-				dc_power: 0,
-				total_energy: 0,
-				month_energy: 0,
-				lastmonth_energy: 0,
-				today_energy: 0,
-				yesterday_energy: 0,
-				year_energy: 0,
-				lastyear_energy: 0,
-				dc_voltage_1: 0,
-				dc_current_1: 0,
-				dc_voltage_2: 0,
-				dc_current_2: 0,
-				ac_voltage: 0,
-				ac_current: 0,
-				inverter_temperature: 0,
-				ac_frequency: 0
-			}
-	
-			me.setState('info.connection', false, true);
-	
-			Object.keys(states).forEach(async key => {
-				await me.setObjectNotExistsAsync(key, {
-					type: 'state',
-					common: {
-						type: 'mixed',
-						read: true,
-						write: true,
-					},
-					native: {},
-				});
-				mqttClient.publish(me.name + '/' + me.instance + '/' + key, states[key] + '');
-				me.setState(key, states[key], true);
-			});
-	
-			if (me.config.inverter === 'sunny5') me.initSunny5Inverter();
-			if (me.config.inverter === 'solis4g') me.initSolis4GInverter(me.config.ModbusDevice, me.config.ModbusAddress);
+			mqttClient.publish(me.name + '/' + me.instance + '/updated', Date.now() + '');
 		})
 	}
 
@@ -151,19 +109,19 @@ class Sunny5Logger extends utils.Adapter {
 					mqttClient.publish(me.name + '/' + me.instance + '/dc_power', msg);
 					break;
 				case 'consumption':
-						mqttClient.publish(me.name + '/' + me.instance + '/ac_consumption' + newtopic, msg);
+						mqttClient.publish(me.name + '/' + me.instance + '/ac_consumption', msg);
 						break;
 				case 'grid':
-					mqttClient.publish(me.name + '/' + me.instance + '/grid_meter' + newtopic, msg);
+					mqttClient.publish(me.name + '/' + me.instance + '/grid_meter', msg);
 					break;
 			}
+
+			mqttClient.publish(me.name + '/' + me.instance + '/updated', Date.now() + '');
 		})
 	}
 
-	initSolis4GInverter(modbusDevice, modbusAddress) {
-		mqttClient.subscribe('sunny5logger/#/#', {qos:1});
-		mqttClient.on('message', async function (topic, message) {
-		});
+	initSolis4GInverter(modbusDevice) {
+		//mqttClient.subscribe('sunny5logger/#', {qos:1});
 
 		modbus.serial.connect(modbusDevice, {
 			baudRate : 9600,
@@ -177,35 +135,40 @@ class Sunny5Logger extends utils.Adapter {
 			if (!err) {
 				me.modbusConnected = true;
 				me.setState('modbus_connected', true, true);
+				mqttClient.publish(me.name + '/' + me.instance + '/modbusConnected', 'true');
 				me.log.info('Connected to serial modbus device: ' + modbusDevice);
 
-				me.schedule1S = schedule.scheduleJob('*/1 * * * * *', function(){
-					me.readSolis4GInverter(me.modbusClient, modbusAddress, me.modbusConnected, me.mqttConnected);
-				});
+				me.schedule1S = schedule.scheduleJob('*/1 * * * * *', this.onSolisTicker.bind(this));
 			}
 			else {
 				me.modbusConnected = false;
 				me.setState('modbus_connected', false, true);
+				mqttClient.publish(me.name + '/' + me.instance + '/modbusConnected', 'false');
 				me.log.error('Error opening a serial modbus connection: ' + modbusDevice);
 				return;
 			}
 		});
 	}
 
-	readSolis4GInverter(connection, address,  modbusConnected, mqttConnected) {
+	onSolisTicker() {
+		this.readSolis4GInverter(me.modbusClient, me.modbusConnected);
+	}
+
+	readSolis4GInverter(connection,  modbusConnected) {
 		if (!modbusConnected) return;
 
-		connection.readInputRegisters({ address: 3005, quantity: 50, extra: { unitId: address } }, (err, res) => {
+		connection.readInputRegisters({ address: 3005, quantity: 50, extra: { unitId: this.config.ModbusAddress } }, (err, res) => {
 			if (err) return;
  
 			let buf = Buffer.concat(res.response.data)
 			let registers = Solis4GParser.InputRegister().parse(buf);
  
 			Object.keys(registers).forEach(async key => {
-				console.log('Publishing', me.name + '/' + me.instance + '/' + key, registers[key] + '');
-				mqttClient.publish(me.name + '/' + me.instance + '/' + key, registers[key] + '');
+				let mqttValue = registers[key] + ''
+				mqttClient.publish(me.name + '/' + me.instance + '/' + key, mqttValue);
 				me.setState(key, registers[key], true);
 			});
+			mqttClient.publish(me.name + '/' + me.instance + '/updated', Date.now() + '');
 		 })
  
 	}
@@ -219,9 +182,51 @@ class Sunny5Logger extends utils.Adapter {
 		Here a simple template for a boolean variable named "testVariable"
 		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
 		*/
-		console.log('*** onReady event!');
+
+		let states = {
+			mqtt_server: this.config.MqttServer,
+			mqtt_connected: 'false',
+			modbus_connected: 'false',
+			ac_power: 0,
+			dc_power: 0,
+			total_energy: 0,
+			month_energy: 0,
+			lastmonth_energy: 0,
+			today_energy: 0,
+			yesterday_energy: 0,
+			year_energy: 0,
+			lastyear_energy: 0,
+			dc_voltage_1: 0,
+			dc_current_1: 0,
+			dc_voltage_2: 0,
+			dc_current_2: 0,
+			ac_voltage: 0,
+			ac_current: 0,
+			inverter_temperature: 0,
+			ac_frequency: 0
+		}
+		  
+		Object.keys(states).forEach(async key => {
+			await this.setObjectNotExistsAsync(key, {
+				type: 'state',
+				common: {
+					type: 'mixed',
+					read: true,
+					write: false,
+				},
+				native: {},
+			});
+			this.setState(key, states[key], true);
+		});
+
+		this.mqttConnected = false;
+		this.modbusConnected = false;
+		this.setState('info.connection', false, true);
 
 		this.initMqtt(this.config.MqttServer);
+
+		if (this.config.inverter === 'sunny5') this.initSunny5Inverter();
+		if (this.config.inverter === 'solis4g') this.initSolis4GInverter(this.config.ModbusDevice);
 
 		// In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
 		// this.subscribeStates('lights.*');

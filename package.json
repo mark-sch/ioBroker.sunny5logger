@@ -29,7 +29,7 @@
   "dependencies": {
     "@iobroker/adapter-core": "^2.4.0",
     "binary-parser-encoder": "^1.5.3",
-    "modbus-stream": "^0.46.0",
+    "modbus-stream": "git+https://github.com/mark-sch/stream.git",
     "mqtt": "^4.2.6",
     "node-schedule": "^2.0.0",
     "node-stream": "^1.7.0"
