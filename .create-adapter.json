@@ -1,7 +1,7 @@
 {
 	"cli": true,
-	"adapterName": "sunny5-logger",
-	"title": "Sunny5-Logger Settings",
+	"adapterName": "sunny5logger",
+	"title": "Sunny5Logger Settings",
 	"description": "Connect to photovotaic inverters, read data, publish to mqtt and store solar data to json file.",
 	"keywords": [
 		"solar",
