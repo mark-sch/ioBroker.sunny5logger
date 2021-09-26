@@ -76,7 +76,7 @@ class Sunny5Logger extends utils.Adapter {
 			me.log.error('Error connecting to MQTT broker');
 			me.mqttConnected = false;
 			me.setState('info.connection', false, true);
-			me.setState('mqtt_connected', false, true);
+			me.setState('mqttConnected', false, true);
 			mqttClient.publish(me.name + '/' + me.instance + '/mqttConnected', 'false');
 		})
 
@@ -84,7 +84,7 @@ class Sunny5Logger extends utils.Adapter {
 			me.log.info('Connected to MQTT broker: ' + mqttServer);
 			me.mqttConnected = true;
 			me.setState('info.connection', true, true);
-			me.setState('mqtt_connected', true, true);
+			me.setState('mqttConnected', true, true);
 			mqttClient.publish(me.name + '/' + me.instance + '/mqttConnected', 'true');
 			//set default values
 			mqttClient.publish(me.name + '/' + me.instance + '/inverter', me.config.inverter);
@@ -101,18 +101,18 @@ class Sunny5Logger extends utils.Adapter {
 			// message is Buffer
 			let msg = message.toString();
 			let newtopic = topic.replace('sunny5/','');
-			console.log('MQTT message', newtopic, msg);
 
 			switch (newtopic) {
 				case 'pv_energy':
-					mqttClient.publish(me.name + '/' + me.instance + '/ac_power', msg);
-					mqttClient.publish(me.name + '/' + me.instance + '/dc_power', msg);
+					//me.log.info('MQTT message ' + newtopic + ' ' + msg);
+					mqttClient.publish(me.name + '/' + me.instance + '/acPower', msg);
+					mqttClient.publish(me.name + '/' + me.instance + '/dcPower', msg);
 					break;
 				case 'consumption':
-						mqttClient.publish(me.name + '/' + me.instance + '/ac_consumption', msg);
-						break;
+					mqttClient.publish(me.name + '/' + me.instance + '/acConsumption', msg);
+					break;
 				case 'grid':
-					mqttClient.publish(me.name + '/' + me.instance + '/grid_meter', msg);
+					mqttClient.publish(me.name + '/' + me.instance + '/gridMeter', msg);
 					break;
 			}
 
@@ -134,7 +134,7 @@ class Sunny5Logger extends utils.Adapter {
 
 			if (!err) {
 				me.modbusConnected = true;
-				me.setState('modbus_connected', true, true);
+				me.setState('modbusConnected', true, true);
 				mqttClient.publish(me.name + '/' + me.instance + '/modbusConnected', 'true');
 				me.log.info('Connected to serial modbus device: ' + modbusDevice);
 
@@ -142,7 +142,7 @@ class Sunny5Logger extends utils.Adapter {
 			}
 			else {
 				me.modbusConnected = false;
-				me.setState('modbus_connected', false, true);
+				me.setState('modbusConnected', false, true);
 				mqttClient.publish(me.name + '/' + me.instance + '/modbusConnected', 'false');
 				me.log.error('Error opening a serial modbus connection: ' + modbusDevice);
 				return;
@@ -163,9 +163,10 @@ class Sunny5Logger extends utils.Adapter {
 			let buf = Buffer.concat(res.response.data)
 			let registers = Solis4GParser.InputRegister().parse(buf);
  
-			Object.keys(registers).forEach(async key => {
-				let mqttValue = registers[key] + ''
-				mqttClient.publish(me.name + '/' + me.instance + '/' + key, mqttValue);
+			Object.keys(registers).forEach(key => {
+				let mqttKey = key.replace("_", "");
+				let mqttValue = registers[key] + '';
+				mqttClient.publish(me.name + '/' + me.instance + '/' + mqttKey, mqttValue);
 				me.setState(key, registers[key], true);
 			});
 			mqttClient.publish(me.name + '/' + me.instance + '/updated', Date.now() + '');
@@ -184,26 +185,26 @@ class Sunny5Logger extends utils.Adapter {
 		*/
 
 		let states = {
-			mqtt_server: this.config.MqttServer,
-			mqtt_connected: 'false',
-			modbus_connected: 'false',
-			ac_power: 0,
-			dc_power: 0,
-			total_energy: 0,
-			month_energy: 0,
-			lastmonth_energy: 0,
-			today_energy: 0,
-			yesterday_energy: 0,
-			year_energy: 0,
-			lastyear_energy: 0,
-			dc_voltage_1: 0,
-			dc_current_1: 0,
-			dc_voltage_2: 0,
-			dc_current_2: 0,
-			ac_voltage: 0,
-			ac_current: 0,
-			inverter_temperature: 0,
-			ac_frequency: 0
+			mqttServer: this.config.MqttServer,
+			mqttConnected: 'false',
+			modbusConnected: 'false',
+			acPower: 0,
+			dcPower: 0,
+			totalEnergy: 0,
+			monthEnergy: 0,
+			lastmonthEnergy: 0,
+			todayEnergy: 0,
+			yesterdayEnergy: 0,
+			yearEnergy: 0,
+			lastyearEnergy: 0,
+			dcVoltage1: 0,
+			dcCurrent1: 0,
+			dcVoltage2: 0,
+			dcVurrent2: 0,
+			acVoltage: 0,
+			acCurrent: 0,
+			inverterTemperature: 0,
+			acFrequency: 0
 		}
 		  
 		Object.keys(states).forEach(async key => {
