@@ -1,6 +1,6 @@
 {
   "name": "iobroker.sunny5logger",
-  "version": "2021.9.12",
+  "version": "2022.5.26",
   "description": "Connect to photovotaic inverters, read data, publish to mqtt and store solar data to json file.",
   "author": {
     "name": "mark-sch",
