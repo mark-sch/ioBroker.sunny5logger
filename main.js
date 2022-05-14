@@ -8,7 +8,7 @@
 // you need to create an adapter
 const utils = require('@iobroker/adapter-core');
 const mqtt = require('mqtt');
-const modbus = require("modbus-stream");
+var modbus = require("modbus-stream");
 const Parser = require("binary-parser-encoder").Parser;
 const schedule = require('node-schedule');
 var me;
@@ -207,6 +207,8 @@ class Sunny5Logger extends utils.Adapter {
 				this.setState('modbusConnected', 'false', true);
 				this.mqttClient.publish(this.name + '/' + this.instance + '/modbusConnected', 'false', { retain:true, qos:1});
 				this.log.info('Serial modbus connection closed: ' + modbusDevice);
+				modbus = null;
+				modbus = require("modbus-stream");
 				setTimeout(() => { this.initSolis4GInverter(this.config.ModbusDevice, false) }, 5000);
 			});
 
@@ -242,7 +244,7 @@ class Sunny5Logger extends utils.Adapter {
 
 		connection.readInputRegisters({ address: 3005, quantity: 50, extra: { unitId: this.config.ModbusAddress } }, (err, res) => {
 			if (err) {
-				this.log.info('Error reading serial modbus input registers: ' + err);
+				//this.log.info('Error reading serial modbus input registers: ' + err);
 				this.mqttClient.publish(this.name + '/' + this.instance + '/acPower', '0', { retain:true, qos:1});
 				this.mqttClient.publish(this.name + '/' + this.instance + '/dcPower', '0', { retain:true, qos:1});
 				this.mqttClient.publish(this.name + '/' + this.instance + '/updated', Date.now() + '', { retain:true, qos:1});
